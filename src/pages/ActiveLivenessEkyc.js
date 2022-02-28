@@ -4,6 +4,7 @@ const millisecond = 1000;
 
 // TODO: implement ekyc service
 const ekycService = async (clientVdo, ekycCheckType) => {
+  console.log(clientVdo)
   return true;
 };
 
@@ -15,6 +16,15 @@ const generateEkycCheckType = () => {
 const initialMediaDevice = async () => {
   return navigator.mediaDevices.getUserMedia({ video: true, audio: true });
 };
+
+const getSupportedRecorderMimeType = () => {
+  const mp4 = MediaRecorder.isTypeSupported("video/mp4")
+  const webm = MediaRecorder.isTypeSupported("video/webm")
+
+  if (mp4) return 'video/mp4'
+
+  if (webm) return 'video/webm'
+}
 
 const useRecorder = (videoRef) => {
   const deviceRef = useRef();
@@ -33,7 +43,7 @@ const useRecorder = (videoRef) => {
   }, [videoRef]);
 
   const startRecorder = () => {
-    recorder.current = new MediaRecorder(deviceRef.current, {});
+    recorder.current = new MediaRecorder(deviceRef.current, { mimeType: getSupportedRecorderMimeType() });
 
     recorder.current.addEventListener("start", (e) => {
       console.log("record started");
@@ -47,7 +57,7 @@ const useRecorder = (videoRef) => {
 
     recorder.current.addEventListener("stop", () => {
       const recordedVideo = URL.createObjectURL(
-        new Blob(recordedBlob.current)
+        new Blob(recordedBlob.current, { type: recorder.current.mimeType })
       );
       recordedBlob.current = [];
       setRecordedVideo(recordedVideo);
