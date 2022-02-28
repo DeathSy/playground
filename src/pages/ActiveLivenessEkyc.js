@@ -64,7 +64,7 @@ const useRecorder = (videoRef) => {
 
 export const ActiveLivenessEkyc = () => {
   const videoRef = useRef();
-  const [ekycCheckType, setEkycCheckType] = useState(generateEkycCheckType());
+  const [ekycCheckType,] = useState(generateEkycCheckType());
 
   const [recordedVideo, { startRecorder, stopRecorder }] =
     useRecorder(videoRef);
