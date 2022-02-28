@@ -9,10 +9,8 @@ const ekycService = async (clientVdo, ekycCheckType) => {
 };
 
 const generateEkycCheckType = () => {
-  const type = ["blink", "mouth", "nod", "yaw"]
-  const randomId_1 = Math.floor(Math.random() * (type.length - 1))
-  const randomId_2 = Math.floor(Math.random() * (type.length - 1))
-  return [type[randomId_1], type[randomId_2]];
+  const type = ["blink", "mouth", "nod", "yaw"];
+  return type;
 };
 
 const initialMediaDevice = async () => {
@@ -67,7 +65,7 @@ const useRecorder = (videoRef) => {
 
 export const ActiveLivenessEkyc = () => {
   const videoRef = useRef();
-  const [ekycCheckType,] = useState(generateEkycCheckType());
+  const [ekycCheckType, setEkycCheckType] = useState(generateEkycCheckType());
 
   const [recordedVideo, { startRecorder, stopRecorder }] =
     useRecorder(videoRef);
@@ -75,7 +73,12 @@ export const ActiveLivenessEkyc = () => {
   useEffect(() => {
     const interval = setInterval(() => {
       stopRecorder();
-      ekycService(recordedVideo, ekycCheckType).then(() => {});
+      ekycService(recordedVideo, ekycCheckType).then(() => {
+        setEkycCheckType((prevType) => {
+          prevType.slice(1);
+          return prevType
+        });
+      });
       startRecorder();
     }, 5 * millisecond);
 
