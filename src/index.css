@@ -1,3 +1,13 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  .rounded-mask {
+    @apply rounded-full;
+    @apply overflow-hidden;
+    height: 75vw;
+    width: 75vw;
+    -webkit-mask-image: -webkit-radial-gradient(white, black);
+  }
+}
