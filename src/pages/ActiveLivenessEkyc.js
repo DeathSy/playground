@@ -9,7 +9,10 @@ const ekycService = async (clientVdo, ekycCheckType) => {
 };
 
 const generateEkycCheckType = () => {
-  return ["nod", "right-blink"];
+  const type = ["blink", "mouth", "nod", "yaw"]
+  const randomId_1 = Math.floor(Math.random() * (type.length - 1))
+  const randomId_2 = Math.floor(Math.random() * (type.length - 1))
+  return [type[randomId_1], type[randomId_2]];
 };
 
 const initialMediaDevice = async () => {
