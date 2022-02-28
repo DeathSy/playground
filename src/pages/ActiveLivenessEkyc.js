@@ -4,7 +4,6 @@ const millisecond = 1000;
 
 // TODO: implement ekyc service
 const ekycService = async (clientVdo, ekycCheckType) => {
-  console.log(clientVdo);
   return false;
 };
 
@@ -22,21 +21,25 @@ const useRecorder = (videoRef) => {
   const recorder = useRef();
   const recordedBlob = useRef([]);
   const [recordedVideo, setRecordedVideo] = useState();
+  const [isReady, setReady] = useState(false);
+  const [isStarted, setStarted] = useState(false);
 
   useEffect(() => {
     initialMediaDevice().then((stream) => {
       deviceRef.current = stream;
       videoRef.current.srcObject = stream;
+      setReady(true);
     });
   }, [videoRef]);
 
   const startRecorder = () => {
     recorder.current = new MediaRecorder(deviceRef.current, {
-      mimeType: 'video/webm',
+      mimeType: "video/webm",
     });
 
     recorder.current.addEventListener("start", (e) => {
       console.log("record started");
+      setStarted(true)
     });
 
     recorder.current.addEventListener("dataavailable", (e) => {
@@ -51,41 +54,48 @@ const useRecorder = (videoRef) => {
       recordedBlob.current = [];
       setRecordedVideo(recordedVideo);
       console.log("record ended");
+      setStarted(false)
     });
 
     recorder.current.start();
   };
 
   const stopRecorder = () => {
-    if (recorder.current) recorder.current.stop();
+    if (recorder.current && isStarted) recorder.current.stop();
   };
 
-  return [recordedVideo, { startRecorder, stopRecorder }];
+  return [
+    { isReady, recordedVideo },
+    { startRecorder, stopRecorder },
+  ];
 };
 
 export const ActiveLivenessEkyc = () => {
   const videoRef = useRef();
   const [ekycCheckType, setEkycCheckType] = useState(generateEkycCheckType());
 
-  const [recordedVideo, { startRecorder, stopRecorder }] =
+  const [{ recordedVideo, isReady }, { startRecorder, stopRecorder }] =
     useRecorder(videoRef);
 
   useEffect(() => {
+    if (isReady && ekycCheckType.length) startRecorder();
+  }, [startRecorder, ekycCheckType, isReady]);
+
+  useEffect(() => {
     const interval = setInterval(() => {
-      stopRecorder();
+      if (isReady) stopRecorder();
+
       ekycService(recordedVideo, ekycCheckType).then(() => {
-        setEkycCheckType((prevType) => {
-          prevType.slice(1);
-          return prevType;
-        });
+        setEkycCheckType((prevType) =>
+          prevType.filter((_, index) => index !== 0)
+        );
       });
-      startRecorder();
     }, 5 * millisecond);
 
     return () => {
       clearInterval(interval);
     };
-  }, [recordedVideo, startRecorder, stopRecorder, ekycCheckType]);
+  }, [recordedVideo, stopRecorder, ekycCheckType, isReady]);
 
   return (
     <>
