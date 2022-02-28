@@ -33,9 +33,7 @@ const useRecorder = (videoRef) => {
   }, [videoRef]);
 
   const startRecorder = () => {
-    recorder.current = new MediaRecorder(deviceRef.current, {
-      mimeType: "video/webm",
-    });
+    recorder.current = new MediaRecorder(deviceRef.current, {});
 
     recorder.current.addEventListener("start", (e) => {
       console.log("record started");
@@ -49,7 +47,7 @@ const useRecorder = (videoRef) => {
 
     recorder.current.addEventListener("stop", () => {
       const recordedVideo = URL.createObjectURL(
-        new Blob(recordedBlob.current, { type: "video/webm" })
+        new Blob(recordedBlob.current)
       );
       recordedBlob.current = [];
       setRecordedVideo(recordedVideo);
@@ -100,7 +98,7 @@ export const ActiveLivenessEkyc = () => {
             prevType.filter((_, index) => index !== 0)
           );
         if (!status && retries <= 3) {
-          setRetries(prevRetries => prevRetries + 1)
+          setRetries((prevRetries) => prevRetries + 1);
           startRecorder();
         }
       });
