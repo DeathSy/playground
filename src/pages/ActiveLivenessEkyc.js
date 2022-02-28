@@ -31,7 +31,7 @@ const useRecorder = (videoRef) => {
 
   const startRecorder = () => {
     recorder.current = new MediaRecorder(deviceRef.current, {
-      mimeType: "video/webm",
+      mimeType: "video/mp4",
     });
 
     recorder.current.addEventListener("start", (e) => {
