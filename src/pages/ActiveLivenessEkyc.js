@@ -4,7 +4,7 @@ const millisecond = 1000;
 
 // TODO: implement ekyc service
 const ekycService = async (clientVdo, ekycCheckType) => {
-  return false;
+  return true;
 };
 
 const generateEkycCheckType = () => {
@@ -39,7 +39,7 @@ const useRecorder = (videoRef) => {
 
     recorder.current.addEventListener("start", (e) => {
       console.log("record started");
-      setStarted(true)
+      setStarted(true);
     });
 
     recorder.current.addEventListener("dataavailable", (e) => {
@@ -54,7 +54,7 @@ const useRecorder = (videoRef) => {
       recordedBlob.current = [];
       setRecordedVideo(recordedVideo);
       console.log("record ended");
-      setStarted(false)
+      setStarted(false);
     });
 
     recorder.current.start();
@@ -73,6 +73,7 @@ const useRecorder = (videoRef) => {
 export const ActiveLivenessEkyc = () => {
   const videoRef = useRef();
   const [ekycCheckType, setEkycCheckType] = useState(generateEkycCheckType());
+  const [retries, setRetries] = useState(0);
 
   const [{ recordedVideo, isReady }, { startRecorder, stopRecorder }] =
     useRecorder(videoRef);
@@ -85,17 +86,37 @@ export const ActiveLivenessEkyc = () => {
     const interval = setInterval(() => {
       if (isReady) stopRecorder();
 
-      ekycService(recordedVideo, ekycCheckType).then(() => {
-        setEkycCheckType((prevType) =>
-          prevType.filter((_, index) => index !== 0)
-        );
+      ekycService(recordedVideo, ekycCheckType).then((status) => {
+        /*
+          TODO: check whether liveness passed
+
+          if liveness passed -> go to next action
+          if liveness not passed -> retry 3 times
+          
+          if failed more than 3 times make it failed
+        */
+        if (status)
+          setEkycCheckType((prevType) =>
+            prevType.filter((_, index) => index !== 0)
+          );
+        if (!status && retries <= 3) {
+          setRetries(prevRetries => prevRetries + 1)
+          startRecorder();
+        }
       });
     }, 5 * millisecond);
 
     return () => {
       clearInterval(interval);
     };
-  }, [recordedVideo, stopRecorder, ekycCheckType, isReady]);
+  }, [
+    recordedVideo,
+    stopRecorder,
+    startRecorder,
+    ekycCheckType,
+    isReady,
+    retries,
+  ]);
 
   return (
     <>
