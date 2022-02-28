@@ -32,7 +32,7 @@ const useRecorder = (videoRef) => {
 
   const startRecorder = () => {
     recorder.current = new MediaRecorder(deviceRef.current, {
-      mimeType: "video/mp4",
+      mimeType: 'video/webm',
     });
 
     recorder.current.addEventListener("start", (e) => {
@@ -76,7 +76,7 @@ export const ActiveLivenessEkyc = () => {
       ekycService(recordedVideo, ekycCheckType).then(() => {
         setEkycCheckType((prevType) => {
           prevType.slice(1);
-          return prevType
+          return prevType;
         });
       });
       startRecorder();
