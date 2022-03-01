@@ -5,8 +5,6 @@ import classNames from "classnames";
 import * as Blazeface from "@tensorflow-models/blazeface";
 import * as tf from "@tensorflow/tfjs-core";
 import * as tfjsWasm from "@tensorflow/tfjs-backend-wasm";
-import "@tensorflow/tfjs-backend-webgl";
-import "@tensorflow/tfjs-backend-cpu";
 
 tfjsWasm.setWasmPaths(
   `https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-wasm@${tfjsWasm.version_wasm}/dist/`
