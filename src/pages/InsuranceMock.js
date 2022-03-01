@@ -1,7 +1,7 @@
 export function InsuranceMock() {
   const handleSubmit = (e) => {
     e.preventDefault();
-    window.location.href = `df2f://conversation?appNo=${e.target["app-no"].value}&clientType=${e.target["client-type"].value}&agentCode=${e.target["agent-code"].value}&phoneNo=${e.target["mobile-number"].value}&polType=${e.target["policy-type"].value}&companyName=philiph-life`;
+    window.location.href = `df2f://conversation?appNo=${e.target["app-no"].value}&clientType=${e.target["client-type"].value}&agentCode=${e.target["agent-code"].value}$licenseNo=${e.target["license-no"]}&phoneNo=${e.target["mobile-number"].value}&polType=${e.target["policy-type"].value}&companyName=philiph-life`;
   };
 
   return (
@@ -24,6 +24,12 @@ export function InsuranceMock() {
             Agent Code
           </label>
           <input type="text" className="form-input" id="agent-code" />
+        </div>
+        <div className="form-control">
+          <label className="label" htmlFor="agent-code">
+            License No
+          </label>
+          <input type="text" className="form-input" id="license-no" />
         </div>
         <div className="form-control">
           <label className="label" htmlFor="mobile-number">
