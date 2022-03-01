@@ -1,10 +1,24 @@
 import { useEffect, useRef, useState } from "react";
+import classNames from "classnames";
+
+// machine learning stuff
+import * as Blazeface from "@tensorflow-models/blazeface";
+import * as tf from "@tensorflow/tfjs-core";
+import * as tfjsWasm from "@tensorflow/tfjs-backend-wasm";
+import "@tensorflow/tfjs-backend-webgl";
+import "@tensorflow/tfjs-backend-cpu";
+
+tfjsWasm.setWasmPaths(
+  `https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-wasm@${tfjsWasm.version_wasm}/dist/`
+);
+tf.setBackend("wasm");
+// end machine learning stuff
 
 const millisecond = 1000;
 
 // TODO: implement ekyc service
 const ekycService = async (clientVdo, ekycCheckType) => {
-  console.log(clientVdo)
+  console.log(clientVdo);
   return true;
 };
 
@@ -18,13 +32,13 @@ const initialMediaDevice = async () => {
 };
 
 const getSupportedRecorderMimeType = () => {
-  const mp4 = MediaRecorder.isTypeSupported("video/mp4")
-  const webm = MediaRecorder.isTypeSupported("video/webm")
+  const mp4 = MediaRecorder.isTypeSupported("video/mp4");
+  const webm = MediaRecorder.isTypeSupported("video/webm");
 
-  if (mp4) return 'video/mp4'
+  if (webm) return "video/webm";
 
-  if (webm) return 'video/webm'
-}
+  if (mp4) return "video/mp4";
+};
 
 const useRecorder = (videoRef) => {
   const deviceRef = useRef();
@@ -43,7 +57,9 @@ const useRecorder = (videoRef) => {
   }, [videoRef]);
 
   const startRecorder = () => {
-    recorder.current = new MediaRecorder(deviceRef.current, { mimeType: getSupportedRecorderMimeType() });
+    recorder.current = new MediaRecorder(deviceRef.current, {
+      mimeType: getSupportedRecorderMimeType(),
+    });
 
     recorder.current.addEventListener("start", (e) => {
       console.log("record started");
@@ -78,6 +94,33 @@ const useRecorder = (videoRef) => {
   ];
 };
 
+const useFaceDetector = (vdo) => {
+  const [isReady, setReady] = useState(false);
+  const [isFaceExists, setFaceExists] = useState(false);
+  const faceModel = useRef();
+
+  useEffect(() => {
+    Blazeface.load().then((model) => {
+      faceModel.current = model;
+      setReady(true);
+    });
+  }, []);
+
+  useEffect(() => {
+    if (isReady) {
+      setInterval(() => {
+        faceModel.current.estimateFaces(vdo, false).then((prediction) => {
+          setFaceExists(
+            prediction.length ? prediction[0].probability > 0.95 : false
+          );
+        });
+      }, 200);
+    }
+  }, [isReady, vdo]);
+
+  return [{ isFaceExists }];
+};
+
 export const ActiveLivenessEkyc = () => {
   const videoRef = useRef();
   const [ekycCheckType, setEkycCheckType] = useState(generateEkycCheckType());
@@ -85,6 +128,7 @@ export const ActiveLivenessEkyc = () => {
 
   const [{ recordedVideo, isReady }, { startRecorder, stopRecorder }] =
     useRecorder(videoRef);
+  const [{ isFaceExists }] = useFaceDetector(videoRef.current);
 
   useEffect(() => {
     if (isReady && ekycCheckType.length) startRecorder();
@@ -129,7 +173,14 @@ export const ActiveLivenessEkyc = () => {
   return (
     <>
       <div className="w-screen max-w-full py-10 flex justify-center">
-        <div className="rounded-mask">
+        <div
+          className={classNames(
+            "rounded-mask",
+            "border-solid",
+            "border-4",
+            isFaceExists ? "border-emerald-500" : "border-rose-500"
+          )}
+        >
           <video
             className="w-auto h-auto min-w-full min-h-full bg-black"
             style={{
