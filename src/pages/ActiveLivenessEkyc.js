@@ -21,9 +21,9 @@ const getSupportedRecorderMimeType = () => {
   const mp4 = MediaRecorder.isTypeSupported("video/mp4")
   const webm = MediaRecorder.isTypeSupported("video/webm")
 
-  if (mp4) return 'video/mp4'
-
   if (webm) return 'video/webm'
+
+  if (mp4) return 'video/mp4'
 }
 
 const useRecorder = (videoRef) => {
