@@ -43,15 +43,16 @@ const livenessService = async (clientVdo) => {
   const body = new FormData();
   body.append("video", clientVdo);
   body.append("rotate", false);
-  body.append("sequence", ["yaw"]);
+  body.append("sequence", "yaw");
   try {
-    const response = await fetch(`${BASE_URL}/mw/e-kyc/fr-active-liveness`, {
+    const request = await fetch(`${BASE_URL}/mw/e-kyc/fr-active-liveness`, {
       method: "POST",
       body,
       headers: {
-        "api-key": API_KEY,
+        "x-api-key": API_KEY,
       },
     });
+    const response = await request.json();
     console.log(response);
   } catch (err) {
     console.log(err);
@@ -109,9 +110,9 @@ const useRecorder = (videoRef) => {
     });
 
     recorder.current.addEventListener("stop", () => {
-      const recordedVideo = URL.createObjectURL(
-        new Blob(recordedBlob.current, { type: recorder.current.mimeType })
-      );
+      const recordedVideo = new Blob(recordedBlob.current, {
+        type: recorder.current.mimeType,
+      });
       recordedBlob.current = [];
       setRecordedVideo(recordedVideo);
       console.log("record ended");
@@ -249,7 +250,7 @@ export const ActiveLivenessEkyc = () => {
       }, 5 * second);
     }
 
-    return () => clearTimeout(timeout)
+    return () => clearTimeout(timeout);
   }, [
     isCaptureSuccess,
     startRecorder,
