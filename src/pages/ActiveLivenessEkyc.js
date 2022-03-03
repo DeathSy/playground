@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import classNames from "classnames";
+import styled, { css, keyframes } from "styled-components";
 
 // machine learning stuff
 import * as Blazeface from "@tensorflow-models/blazeface";
@@ -12,17 +13,55 @@ tfjsWasm.setWasmPaths(
 tf.setBackend("wasm");
 // end machine learning stuff
 
-const millisecond = 1000;
+const second = 1000;
+const BASE_URL = "https://ml-uat.appman.co.th";
+const API_KEY = "D0VJdgq51n8Gsgs6FyjiY7Ib3qMEtWJK3Fy93BoB";
+
+const CircularFrame = keyframes`
+  to {
+    stroke-dashoffset: 0;
+  }
+`;
+
+const Svg = styled.svg`
+  circle {
+    stroke-dasharray: 1000;
+    stroke-dashoffset: 1000;
+    transform-origin: center;
+    transform: rotate(270deg);
+    animation: ${(props) =>
+      props.isReady &&
+      css`
+        ${CircularFrame} ${(props) => props.threshold}s ease-out forwards;
+      `};
+    animation-delay: 0.5s;
+  }
+`;
 
 // TODO: implement ekyc service
-const ekycService = async (clientVdo, ekycCheckType) => {
-  console.log(clientVdo);
+const livenessService = async (clientVdo) => {
+  const body = new FormData();
+  body.append("video", clientVdo);
+  body.append("rotate", false);
+  body.append("sequence", ["yaw"]);
+  try {
+    const response = await fetch(`${BASE_URL}/mw/e-kyc/fr-active-liveness`, {
+      method: "POST",
+      body,
+      headers: {
+        "api-key": API_KEY,
+      },
+    });
+    console.log(response);
+  } catch (err) {
+    console.log(err);
+  }
   return true;
 };
 
-const generateEkycCheckType = () => {
-  const type = ["blink", "mouth", "nod", "yaw"];
-  return type;
+const faceComparisonService = async (base64Image) => {
+  console.log(base64Image);
+  return true;
 };
 
 const initialMediaDevice = async () => {
@@ -93,8 +132,22 @@ const useRecorder = (videoRef) => {
 };
 
 const useFaceDetector = (vdo) => {
+  /*
+   * Face detection effect
+   * Steps:
+   * - Detect whether there are any face(s) inside capture frame
+   * - IF there are turn `isFaceDetect` value to `true`
+   * - If not show error ring (red ring)
+   *
+   * Notes:
+   * - Face detection should be running in the background and error ring
+   *  should shown up even when user is on face capturing step
+   * - When ever error ring is shown up user need to do current step again
+   *  from the beginning
+   */
+
   const [isReady, setReady] = useState(false);
-  const [isFaceExists, setFaceExists] = useState(false);
+  const [isFaceDetected, setFaceDetected] = useState(false);
   const faceModel = useRef();
 
   useEffect(() => {
@@ -106,9 +159,12 @@ const useFaceDetector = (vdo) => {
 
   useEffect(() => {
     if (isReady) {
+      /*
+       * Face detection model is detecting every 200ms (5 fps)
+       */
       setInterval(() => {
         faceModel.current.estimateFaces(vdo, false).then((prediction) => {
-          setFaceExists(
+          setFaceDetected(
             prediction.length ? prediction[0].probability > 0.95 : false
           );
         });
@@ -116,57 +172,102 @@ const useFaceDetector = (vdo) => {
     }
   }, [isReady, vdo]);
 
-  return [{ isFaceExists }];
+  return [{ isFaceDetected }];
+};
+
+const snapVideo = (video) => {
+  const canvas = document.createElement("canvas");
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+  canvas.getContext("2d").drawImage(video, 0, 0, canvas.width, canvas.height);
+  const dataURL = canvas.toDataURL();
+  return dataURL;
 };
 
 export const ActiveLivenessEkyc = () => {
+  const progressRef = useRef();
   const videoRef = useRef();
-  const [ekycCheckType, setEkycCheckType] = useState(generateEkycCheckType());
-  const [retries, setRetries] = useState(0);
-
+  const [{ isFaceDetected }] = useFaceDetector(videoRef.current);
   const [{ recordedVideo, isReady }, { startRecorder, stopRecorder }] =
     useRecorder(videoRef);
-  const [{ isFaceExists }] = useFaceDetector(videoRef.current);
+
+  const [isValid, setValid] = useState(false);
+  const [isCaptureStarted, setCaptureStarted] = useState(false);
+  const [isCaptureSuccess, setCaptureSuccess] = useState(false);
+  const [shouldStartRecord, setShouldStartRecord] = useState(false);
+  const [retries, setRetries] = useState(0);
 
   useEffect(() => {
-    if (isReady && ekycCheckType.length) startRecorder();
-  }, [startRecorder, ekycCheckType, isReady]);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      if (isReady) stopRecorder();
-
-      ekycService(recordedVideo, ekycCheckType).then((status) => {
-        /*
-          TODO: check whether liveness passed
-
-          if liveness passed -> go to next action
-          if liveness not passed -> retry 3 times
-          
-          if failed more than 3 times make it failed
-        */
-        if (status)
-          setEkycCheckType((prevType) =>
-            prevType.filter((_, index) => index !== 0)
-          );
-        if (!status && retries <= 3) {
-          setRetries((prevRetries) => prevRetries + 1);
-          startRecorder();
-        }
+    if (isValid)
+      progressRef.current.addEventListener("animationend", () => {
+        setShouldStartRecord(true);
       });
-    }, 5 * millisecond);
+  }, [isValid]);
 
-    return () => {
-      clearInterval(interval);
-    };
+  useEffect(() => {
+    /*
+     * Face comparison effect
+     * Steps:
+     * - While `isFaceDetect` value is true
+     * - Start face capturing with progress ring
+     * - Then send that captured image to face comparison api
+     */
+
+    if (isFaceDetected) {
+      setCaptureStarted(true);
+      setTimeout(() => {
+        const response = snapVideo(videoRef.current);
+        if (response) {
+          setCaptureSuccess(true);
+          // TODO: implement face comparison
+          faceComparisonService(response).then(() => setValid(true));
+        }
+      }, 1.2 * second);
+    } else {
+      setValid(false);
+    }
+  }, [isFaceDetected]);
+
+  useEffect(() => {
+    /*
+     * Liveness detection effect
+     * Steps:
+     * - While `isFaceDetect` value is true and user has passed Face comparision
+     * - Start video record with current vdo stream for 5 seconds
+     * - Then send that recorded video to liveness detection api
+     * - If api result return any falsy value within 3 times
+     *   - redo video capturing again
+     * - If retries more than 3 times show some error message
+     */
+    let timeout;
+    if (shouldStartRecord && retries <= 3) {
+      startRecorder();
+
+      timeout = setTimeout(() => {
+        stopRecorder();
+        setShouldStartRecord(false);
+      }, 5 * second);
+    }
+
+    return () => clearTimeout(timeout)
   }, [
-    recordedVideo,
-    stopRecorder,
+    isCaptureSuccess,
     startRecorder,
-    ekycCheckType,
-    isReady,
+    stopRecorder,
+    shouldStartRecord,
     retries,
   ]);
+
+  useEffect(() => {
+    if (recordedVideo) {
+      livenessService(recordedVideo).then((response) => {
+        if (!response) {
+          setRetries((prev) => prev + 1);
+          setShouldStartRecord(true);
+        }
+      });
+    }
+  }, [recordedVideo]);
 
   return (
     <>
@@ -176,22 +277,53 @@ export const ActiveLivenessEkyc = () => {
             "rounded-mask",
             "border-solid",
             "border-4",
-            isFaceExists ? "border-emerald-500" : "border-rose-500"
+            "relative",
+            "flex",
+            "justify-center",
+            "items-center",
+            "relative"
           )}
         >
-          <video
-            className="w-auto h-auto min-w-full min-h-full bg-black"
-            style={{
-              transform: "scaleX(-1)",
-            }}
-            ref={videoRef}
-            autoPlay
-            muted
-            playsInline
-          />
+          {(isValid || isCaptureSuccess) && (
+            <Svg
+              ref={progressRef}
+              className={classNames("absolute", "w-full", "h-full")}
+              threshold={1.5}
+              isReady={isCaptureStarted}
+            >
+              <circle
+                cx="50%"
+                cy="50%"
+                r="50%"
+                strokeWidth="10"
+                stroke="lightgreen"
+              />
+            </Svg>
+          )}
+          <div
+            className={classNames("rounded-mask")}
+            style={{ width: "95%", height: "95%" }}
+          >
+            <video
+              className="w-auto h-auto min-h-full min-w-full bg-black"
+              style={{
+                transform: "scaleX(-1)",
+              }}
+              ref={videoRef}
+              autoPlay
+              muted
+              playsInline
+            />
+          </div>
         </div>
       </div>
-      <h1 className="text-5xl font-bold text-center">{ekycCheckType[0]}</h1>
+      <h1 className="text-4xl font-bold text-center">
+        {!isReady && "Initializing..."}
+        {isReady && !isValid && !isCaptureStarted && "Please be in frame"}
+        {isCaptureStarted && !shouldStartRecord && "Hold your camera still"}
+        {shouldStartRecord && "Please move your head around"}
+        {retries >= 3 && "Face comparison failed, Please redo eveything again"}
+      </h1>
     </>
   );
 };
