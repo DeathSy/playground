@@ -16,6 +16,7 @@ tf.setBackend("wasm");
 const second = 1000;
 const BASE_URL = "https://ml-uat.appman.co.th";
 const API_KEY = "D0VJdgq51n8Gsgs6FyjiY7Ib3qMEtWJK3Fy93BoB";
+const REF_NO = "EKYC20220304070952355"
 
 const CircularFrame = keyframes`
   to {
@@ -41,15 +42,18 @@ const Svg = styled.svg`
 // TODO: implement ekyc service
 const livenessService = async (clientVdo) => {
   const body = new FormData();
-  body.append("video", clientVdo);
-  body.append("rotate", false);
-  body.append("sequence", "yaw");
+  // ! need to convert to Blob to real mp4 file otherwise backend server cannot blob file metadata
+  const file = new File([clientVdo], "recordedVideo.mp4", { type: getSupportedRecorderMimeType() })
+  body.append("video", file);
+  body.append("rotate", true);
+  body.append("sequence", "nod");
   try {
     const request = await fetch(`${BASE_URL}/mw/e-kyc/fr-active-liveness`, {
       method: "POST",
       body,
       headers: {
         "x-api-key": API_KEY,
+        "reference-number": REF_NO
       },
     });
     const response = await request.json();
@@ -61,7 +65,7 @@ const livenessService = async (clientVdo) => {
 };
 
 const faceComparisonService = async (base64Image) => {
-  console.log(base64Image);
+  // console.log(base64Image);
   return true;
 };
 
@@ -196,7 +200,9 @@ export const ActiveLivenessEkyc = () => {
   const [isCaptureStarted, setCaptureStarted] = useState(false);
   const [isCaptureSuccess, setCaptureSuccess] = useState(false);
   const [shouldStartRecord, setShouldStartRecord] = useState(false);
+  const [isLoading, setLoading] = useState(false)
   const [retries, setRetries] = useState(0);
+  const [isSuccess, setSuccess] = useState(false)
 
   useEffect(() => {
     if (isValid)
@@ -261,11 +267,15 @@ export const ActiveLivenessEkyc = () => {
 
   useEffect(() => {
     if (recordedVideo) {
-      livenessService(recordedVideo).then((response) => {
-        if (!response) {
+      setLoading(true)
+      livenessService(recordedVideo).then(({ data }) => {
+        if (!data.pass) {
           setRetries((prev) => prev + 1);
           setShouldStartRecord(true);
+        } else {
+          setSuccess(true)
         }
+        setLoading(false)
       });
     }
   }, [recordedVideo]);
@@ -321,9 +331,11 @@ export const ActiveLivenessEkyc = () => {
       <h1 className="text-4xl font-bold text-center">
         {!isReady && "Initializing..."}
         {isReady && !isValid && !isCaptureStarted && "Please be in frame"}
-        {isCaptureStarted && !shouldStartRecord && "Hold your camera still"}
-        {shouldStartRecord && "Please move your head around"}
+        {isCaptureStarted && !isCaptureSuccess && !shouldStartRecord && "Hold your camera still"}
+        {shouldStartRecord && "Please move nod your head"}
+        {shouldStartRecord && isLoading && "Processing..."}
         {retries >= 3 && "Face comparison failed, Please redo eveything again"}
+        {isSuccess && "Success"}
       </h1>
     </>
   );
