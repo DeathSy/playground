@@ -71,7 +71,7 @@ const faceComparisonService = async (base64Image) => {
 };
 
 const initialMediaDevice = async () => {
-  return navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+  return navigator.mediaDevices.getUserMedia({ video: true, audio: false});
 };
 
 const getSupportedRecorderMimeType = () => {
@@ -101,6 +101,7 @@ const useRecorder = (videoRef) => {
 
   const startRecorder = () => {
     recorder.current = new MediaRecorder(deviceRef.current, {
+      videoBitsPerSecond: 2 * 1000 * 1000, // 2 Mbit/s
       mimeType: getSupportedRecorderMimeType(),
     });
 
