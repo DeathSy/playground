@@ -8,6 +8,6 @@
     @apply overflow-hidden;
     height: 75vw;
     width: 75vw;
-    -webkit-mask-image: -webkit-radial-gradient(white, black);
+    -webkit-mask-image: -webkit-radial-gradient(transp, black);
   }
 }

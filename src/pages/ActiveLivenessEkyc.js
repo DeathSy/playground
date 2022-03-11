@@ -26,8 +26,8 @@ const CircularFrame = keyframes`
 
 const Svg = styled.svg`
   circle {
-    stroke-dasharray: 1000;
-    stroke-dashoffset: 1000;
+    stroke-dasharray: 2000;
+    stroke-dashoffset: 2000;
     transform-origin: center;
     transform: rotate(270deg);
     animation: ${(props) =>
@@ -48,7 +48,7 @@ const livenessService = async (clientVdo) => {
   });
   body.append("video", file);
   body.append("rotate", true);
-  body.append("sequence", "yaw");
+  body.append("sequence", "yaw,nod");
   try {
     const request = await fetch(`${BASE_URL}/mw/e-kyc/fr-active-liveness`, {
       method: "POST",
@@ -71,7 +71,7 @@ const faceComparisonService = async (base64Image) => {
 };
 
 const initialMediaDevice = async () => {
-  return navigator.mediaDevices.getUserMedia({ video: true, audio: false});
+  return navigator.mediaDevices.getUserMedia({ video: true, audio: false });
 };
 
 const getSupportedRecorderMimeType = () => {
@@ -293,9 +293,6 @@ export const ActiveLivenessEkyc = () => {
       <div className="w-screen max-w-full py-10 flex justify-center">
         <div
           className={classNames(
-            "rounded-mask",
-            "border-solid",
-            "border-4",
             "relative",
             "flex",
             "justify-center",
@@ -307,21 +304,28 @@ export const ActiveLivenessEkyc = () => {
             <Svg
               ref={progressRef}
               className={classNames("absolute", "w-full", "h-full")}
+              style={{ zIndex: 1000 }}
               threshold={1.5}
               isReady={isCaptureStarted}
             >
               <circle
                 cx="50%"
                 cy="50%"
-                r="50%"
+                r="30%"
                 strokeWidth="10"
+                fill="transparent"
                 stroke="lightgreen"
               />
             </Svg>
           )}
           <div
-            className={classNames("rounded-mask")}
-            style={{ width: "95%", height: "95%" }}
+            style={{
+              width: "95%",
+              height: "95%",
+              WebkitMaskImage: "radial-gradient(circle, black 45%, rgba(0, 0, 0, 0.5) 45%)",
+              maskImage:
+                "radial-gradient(circle, black 40%, rgba(0, 0, 0, 0.5) 40%)",
+            }}
           >
             <video
               className="w-auto h-auto min-h-full min-w-full bg-black"
@@ -344,7 +348,9 @@ export const ActiveLivenessEkyc = () => {
           !isSuccess &&
           !shouldStartRecord &&
           "Hold your camera still"}
-        {shouldStartRecord && retries < 3 && "Please move your head left and right"}
+        {shouldStartRecord &&
+          retries < 3 &&
+          "Please yaw and nod"}
         {!shouldStartRecord && isLoading && "Processing..."}
         {retries >= 3 && "Face comparison failed, Please redo everything again"}
         {isSuccess && "Success"}
