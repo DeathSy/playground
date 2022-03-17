@@ -1,7 +1,7 @@
 export function InsuranceMock() {
   const handleSubmit = (e) => {
     e.preventDefault();
-    window.location.href = `df2f://conversation?appNo=${e.target["app-no"].value}&clientType=${e.target["client-type"].value}&agentCode=${e.target["agent-code"].value}$licenseNo=${e.target["license-no"]}&phoneNo=${e.target["mobile-number"].value}&polType=${e.target["policy-type"].value}&voice1=${e.target["voice-1"].value}&voice2=${e.target["voice-2"].value}&companyName=philiph-life`;
+    window.location.href = `df2f://conversation?appNo=${e.target["app-no"].value}&clientType=${e.target["client-type"].value}&agentCode=${e.target["agent-code"].value}&licenseNo=${e.target["license-no"].value}&phoneNo=${e.target["mobile-number"].value}&polType=${e.target["policy-type"].value}&voice1=${e.target["voice-1"].value}&voice2=${e.target["voice-2"].value}&companyName=philiph-life`;
   };
 
   return (
