@@ -9,6 +9,9 @@ export const Home = () => {
       <div>
         <Link to="active-ekyc">Active Ekyc</Link>
       </div>
+      <div>
+        <Link to="resource-check">Resource check</Link>
+      </div>
     </>
   );
 };
