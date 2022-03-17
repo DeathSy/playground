@@ -47,7 +47,7 @@ export function InsuranceMock() {
           <label className="label" htmlFor="voice-1">
             Voice 1
           </label>
-          <textarea type="text" className="form-input" id="voice-2" />
+          <textarea type="text" className="form-input" id="voice-1" />
         </div>
         <div className="form-control">
           <label className="label" htmlFor="voice-2">
